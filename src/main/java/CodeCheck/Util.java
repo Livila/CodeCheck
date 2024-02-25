@@ -8,16 +8,16 @@ public interface Util {
 
     static File createFile(String filePath, boolean isFirstTry) {
         File file = new File(filePath);
-        try {
 
+        try {
             if (file.createNewFile()) {
                 Log.log(String.format("File created: %s", file.getPath()));
                 return file;
             } else {
                 if (isFirstTry)
-                    Log.logReduced("The file %s already exist, trying to create the next id... ", file.getPath());
+                    Log.log("The file %s already exist, trying to create the next id... ", file.getPath());
                 else
-                    Log.logReduced("%s ... ", file.getPath());
+                    Log.log("%s ... ", file.getPath());
 
                 return null;
             }
@@ -31,6 +31,7 @@ public interface Util {
     static void write(String filePath, String msg) {
         write(filePath, msg, true);
     }
+
     static void write(String filePath, String msg, boolean append) {
         try {
             FileWriter myWriter = new FileWriter(filePath, append);
@@ -55,5 +56,13 @@ public interface Util {
         int hours = seconds / 3600;
 
         return new int[]{hours, minutes, seconds % 60, (int) millis % 1000};
+    }
+
+    static String checkIfHomePath(String path) {
+        if (path.startsWith("~")) {
+            return System.getProperty("user.home") + path.substring(1);
+        } else {
+            return path;
+        }
     }
 }

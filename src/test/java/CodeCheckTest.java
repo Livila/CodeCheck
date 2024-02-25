@@ -5,7 +5,6 @@ import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.nio.file.FileSystems;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
@@ -14,19 +13,16 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class CodeCheckTest {
 
-    private final String testConfPath = FileSystems.getDefault()
-            .getPath("").toAbsolutePath() + File.separator + "test-config.properties";
-
+    private final String userDirectory = System.getProperty("user.dir");
+    private final String testConfPath = userDirectory + File.separator + "test-config.properties";
     private final String resultFolder = "test-results";
     private final String resultNamePrefix = "test-result_{nr}";
     private final String resultFileName = "test-result_0.txt";
 
     @Test
     public void executeTest() throws Exception {
-        delete(FileSystems.getDefault()
-                .getPath("").toAbsolutePath() + File.separator + resultFolder);
+        delete(userDirectory + File.separator + resultFolder);
 
-        Util.createFile(testConfPath, true);
         writeConf();
         CodeCheck.execute();
 
@@ -37,9 +33,11 @@ public class CodeCheckTest {
 
     private void delete(String path) {
         File dir = new File(path);
-        if (dir.exists()) {
+        if (dir.isDirectory()) {
             Arrays.stream(dir.listFiles()).forEach(File::delete);
             dir.delete();
+        } else {
+            Log.warning("Could not delete '%s' directory as it doesn't exist.".formatted(resultFolder));
         }
     }
 
@@ -59,29 +57,34 @@ public class CodeCheckTest {
     }
 
     private void emptyTestConf() {
-        Util.write(testConfPath, "# empty", false);
+        Util.write(testConfPath, "# empty -- properties used under testing -- this file will be overwritten during testing", false);
     }
 
-    private String readResult(){
-        String content = "";
+    private String readResult() throws FileNotFoundException {
+        StringBuilder content = new StringBuilder();
+
         try {
-            String path = FileSystems.getDefault().getPath("").toAbsolutePath() +
+            String path = userDirectory +
                     File.separator + resultFolder +
                     File.separator + resultFileName;
 
             File myObj = new File(path);
             Scanner myReader = new Scanner(myObj);
+
             while (myReader.hasNextLine()) {
                 String data = myReader.nextLine();
-                content  += "\n" + data;
+                content.append("\n").append(data);
                 Log.debug(data);
             }
+
             myReader.close();
+
         } catch (FileNotFoundException e) {
-            Log.error("test result file not found");
-            e.printStackTrace();
-            return "";
+            String errorMessage = "Testing result file not found. %s".formatted(e.getMessage());
+            Log.error(errorMessage);
+            throw new FileNotFoundException(errorMessage + "\n" + Arrays.toString(e.getStackTrace()));
         }
-        return content;
+
+        return content.toString();
     }
 }

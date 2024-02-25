@@ -1,7 +1,6 @@
 package CodeCheck;
 
 import java.io.*;
-import java.nio.file.FileSystems;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -12,49 +11,38 @@ public interface ConfigInterface {
 
     class Config {
         enum LoggingLevel {
-            NONE(0),
-            N(NONE.lvl),
-            OFF(NONE.lvl),
-            O(OFF.lvl),
-            ERROR(1),
-            ERR(ERROR.lvl),
-            E(ERROR.lvl),
-            WARNING(2),
-            WARN(WARNING.lvl),
-            W(WARNING.lvl),
-            INFO(3),
-            I(INFO.lvl),
-            DEBUG(4),
-            D(DEBUG.lvl),
-            TRACE(5),
-            T(TRACE.lvl);
-
-            private final int lvl;
+            NONE(0), N(NONE.lvl), OFF(NONE.lvl), O(OFF.lvl),
+            ERROR(1), ERR(ERROR.lvl), E(ERROR.lvl),
+            WARNING(2), WARN(WARNING.lvl), W(WARNING.lvl),
+            INFO(3), I(INFO.lvl),
+            DEBUG(4), D(DEBUG.lvl),
+            TRACE(5), T(TRACE.lvl);
 
             public boolean logOn(LoggingLevel lvl) {
                 return lvl.lvl <= this.lvl;
             }
 
-            LoggingLevel(int i) {
-                lvl = i;
+            private final int lvl;
+
+            LoggingLevel(int lvl) {
+                this.lvl = lvl;
             }
         }
 
-        Properties appProps;
+        private Properties appProps;
 
         public Config() {}
 
         public void loadConfig() throws IOException {
             this.appProps = new Properties();
 
-            String rootDirPath = FileSystems.getDefault().getPath("").toAbsolutePath().toString() + File.separator;
+            String rootDirPath = System.getProperty("user.dir") + File.separator;
             String appConfigPath = rootDirPath + "config.properties";
             File test_conf = new File(rootDirPath + "test-config.properties");
 
-            if (test_conf.exists() && countLines(test_conf) > 1) {
+            if (test_conf.isFile() && countLines(test_conf) > 1) {
                 appConfigPath = rootDirPath + "test-config.properties";
-
-            } else if (new File(rootDirPath + "local-config.properties").exists()) {
+            } else if (new File(rootDirPath + "local-config.properties").isFile()) {
                 appConfigPath = rootDirPath + "local-config.properties";
             }
 
@@ -77,7 +65,10 @@ public interface ConfigInterface {
 
         public List<String> getList(String key) {
             String value = getString(key);
-            if (value == null) return Collections.emptyList();
+
+            if (value == null)
+                return Collections.emptyList();
+
             return Arrays
                     .stream(value.substring(1, value.length() - 1).split(","))
                     .map(String::strip)

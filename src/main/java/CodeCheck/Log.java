@@ -15,7 +15,7 @@ public interface Log {
         BLUE { @Override public String toString() { return "\u001B[34m"; } },
         PURPLE { @Override public String toString() { return "\u001B[35m"; } },
         BLACK { @Override public String toString() { return "\u001B[36m"; } },
-        CYAN { @Override public String toString() { return "\u001B[37m"; } };
+        GRAY { @Override public String toString() { return "\u001B[37m"; } };
     }
 
     static void log(String msg) {
@@ -44,7 +44,7 @@ public interface Log {
             logReduced("%s [%s] %s".formatted(
                     LocalDateTime.now(),
                     lvl.name(),
-                    msg + System.lineSeparator()),
+                    msg),
                     lvl);
         }
     }
@@ -57,7 +57,17 @@ public interface Log {
         log(String.format(msg, formatting), level);
     }
 
-    static void logReduced(String msg, ConfigInterface.Config.LoggingLevel level, boolean newLine) {
+    static void log(String msg, Color color) {
+        System.out.printf(
+                "%s%s [%s] %s%n",
+                color,
+                LocalDateTime.now(),
+                ConfigInterface.Config.LoggingLevel.INFO,
+                msg
+        );
+    }
+
+    static private void logReduced(String msg, ConfigInterface.Config.LoggingLevel level) {
         Color colorLevel = switch (level) {
             case NONE, N, OFF, O -> Color.NONE; // No change in color.
             case ERROR, ERR, E -> Color.RED;
@@ -67,29 +77,6 @@ public interface Log {
             case TRACE, T -> Color.BLUE;
         };
 
-        if (newLine) System.out.println(colorLevel + msg + Color.RESET);
-        else System.out.print(colorLevel + msg + Color.RESET);
-    }
-
-    static void logReduced(String msg, ConfigInterface.Config.LoggingLevel level) {
-        logReduced(msg, level, false);
-    }
-
-    static void logReduced(String msg) {
-        logReduced(msg, ConfigInterface.Config.LoggingLevel.INFO, false);
-    }
-
-    static void logReduced(String msg, Object... formatting) {
-        logReduced(String.format(msg, formatting), ConfigInterface.Config.LoggingLevel.INFO, false);
-    }
-
-    static void logColor(String msg, Color color) {
-        System.out.printf(
-                "%s%s [%s] %s%n",
-                color,
-                LocalDateTime.now(),
-                ConfigInterface.Config.LoggingLevel.INFO,
-                msg
-        );
+        System.out.println(colorLevel + msg + Color.RESET);
     }
 }
