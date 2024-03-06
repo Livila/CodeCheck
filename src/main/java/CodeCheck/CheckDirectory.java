@@ -3,6 +3,7 @@ package CodeCheck;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Scanner;
 import java.util.function.Predicate;
@@ -16,6 +17,7 @@ public class CheckDirectory {
     private final List<Pattern> EXCLUDED_PATHS = ConfigInterface
             .conf
             .getList("EXCLUDED_PATHS")
+            .orElse(Collections.emptyList())
             .stream()
             .filter(Predicate.not(String::isEmpty))
             .map(path -> "((?i)" + path.trim() + "(?-i))")
@@ -26,7 +28,7 @@ public class CheckDirectory {
         llm.initModel();
     }
 
-    public void stopModel() throws Exception {
+    public void stopModel() {
         llm.cleanModel();
     }
 
@@ -81,8 +83,8 @@ public class CheckDirectory {
                         manyFunctions.commitFile(file.getName());
                         manyFunctions.commitLine(lineNumber);
 
-                        Log.trace("Full path: " + file.getAbsolutePath());
-                        Log.debug("Function: " +
+                        Log.debug("Accessing file at the path: " + file.getAbsolutePath());
+                        Log.trace("Function: " +
                                 manyFunctions.commit.name + " in " +
                                 manyFunctions.commit.file + ":" +
                                 manyFunctions.commit.line + " with " +

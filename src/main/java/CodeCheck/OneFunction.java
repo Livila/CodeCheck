@@ -2,41 +2,52 @@ package CodeCheck;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.function.Predicate;
+import java.util.regex.Pattern;
 
 public class OneFunction {
-    public String name;
-    public int nrParams;
-    public String file;
-    public int line;
-    public List<String> content = new ArrayList<>();
+    public String name, file;
+    public int nrParams, line;
+    public List<String> content;
+
+    private static final Pattern patternRemoveComments = Pattern.compile("(.*)(//.*)+");
+    private static final Pattern patternRemoveSpacesTabsNewLines = Pattern.compile("\\s");
+
+    protected OneFunction() {
+        content = new ArrayList<>();
+    }
 
     public int equals(OneFunction obj) {
         if (obj.content.size() > 2 && obj.name.equals(name) && obj.removeExtraInformationAndGetString().equals(removeExtraInformationAndGetString()))
             return 1;
-        if (obj.name.equals(name) && obj.content.size() > 4 && content.size() > 4) return 2;
-        if (obj.name.equals(name)) return 3;
+        if (obj.name.equals(name) && obj.content.size() > 4 && content.size() > 4)
+            return 2;
+        if (obj.name.equals(name))
+            return 3;
 
         return 10;
     }
 
     public Comparison compare(OneFunction other, LLM llm) {
-        switch (equals(other)) {
-            case 1: return new Comparison(true, "Functions are identical").setFunctions(this, other);
-            case 2: return similar(other, llm);
-            case 3: return new Comparison(false, false, "Empty or closetherby");
-            default:
-                return new Comparison();
-        }
+        return switch (equals(other)) {
+            case 1 -> new Comparison(true, "Functions are identical.").setFunctions(this, other);
+            case 2 -> similar(other, llm);
+            case 3 -> new Comparison(false, false, "Empty or closetherby.");
+            default -> new Comparison();
+        };
     }
 
     private Comparison similar(OneFunction obj, LLM llm) {
         List<String> thisCont = removeExtraInformation();
         List<String> objCont = obj.removeExtraInformation();
 
-        int matchingLines = objCont.stream().filter(objLine -> thisCont.contains(objLine)).toList().size();
+        int matchingLines = objCont
+                .stream()
+                .filter(thisCont::contains)
+                .toList()
+                .size();
 
-        if ((matchingLines + 0.0)/objCont.size() > 0.5 || matchingLines > 10)
+        if ((matchingLines + 0.0) / objCont.size() > 0.5 || matchingLines > 10)
             return new Comparison(false, true, "Matching lines " + matchingLines + " out of " + objCont.size()).setFunctions(this, obj);
         else
             return new Comparison(false, true, llmComparison(obj, llm)).setFunctions(this, obj);
@@ -49,8 +60,8 @@ public class OneFunction {
 
     public String llmComparison(OneFunction other, LLM llm) {
 
-        Log.debug(this.content.toString());
-        Log.debug(other.content.toString());
+        Log.trace("llmComparison->this:  " + this.content.toString());
+        Log.trace("llmComparison->other:  " + other.content.toString());
 
         String functionThis = getFunctionMsg(1) + this.content.toString(); // getFunctionMsg(1)
         String functionOther = getFunctionMsg(2) + other.content.toString(); // other.getFunctionMsg(2)
@@ -75,10 +86,11 @@ public class OneFunction {
 
     private List<String> removeExtraInformation() {
         return this.content.stream()
-                .map(s -> s.replaceAll("(.*)(//.*)+", "$1"))
-                .filter(s -> !s.matches("^\\s*//"))
-                .map(s -> s.replace(" ", ""))
-                .filter(s -> !s.startsWith("Log"))
-                .filter(s -> !s.isEmpty()).toList();
+                .map(String::strip)
+                .map(s -> patternRemoveComments.matcher(s).replaceAll("$1"))
+                .map(s -> patternRemoveSpacesTabsNewLines.matcher(s).replaceAll(""))
+                .filter(s -> !s.startsWith(Log.class.getSimpleName()))
+                .filter(Predicate.not(String::isEmpty))
+                .toList();
     }
 }
